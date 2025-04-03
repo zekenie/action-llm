@@ -12,6 +12,9 @@ jobs:
   process-issue:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
       - name: Process Issue
         uses: ./ # Uses the action in the root directory
         with:
