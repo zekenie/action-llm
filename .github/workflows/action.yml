@@ -1,4 +1,4 @@
-name: LLM Actions System
+name: Run LLM Actions System
 
 on:
   issues:
@@ -11,10 +11,12 @@ on:
 jobs:
   process:
     runs-on: ubuntu-latest
+    
     # Define environment variables at the job level
     env:
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
       LLM_MODEL: ${{ vars.LLM_MODEL || 'claude-3.7-sonnet-20250219' }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     steps:
       - name: Checkout repository
@@ -27,12 +29,14 @@ jobs:
           echo "LLM_API_KEY available: ${{ secrets.LLM_API_KEY != '' }}"
           echo "LLM_MODEL available: ${{ vars.LLM_MODEL != '' }}"
       
-      - name: Run Action AI
-        uses: ./
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          llm-api-key: ${{ secrets.LLM_API_KEY }}
-          llm-model: ${{ vars.LLM_MODEL || 'claude-3.7-sonnet-20250219' }}
+          node-version: '20'
+      
+      # Run the prebuilt action directly from dist
+      - name: Run action
+        run: node dist/index.js
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ vars.LLM_MODEL || 'claude-3.7-sonnet-20250219' }}
