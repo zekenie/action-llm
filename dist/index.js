@@ -34787,21 +34787,31 @@ class ActionDispatcher {
      */
     async dispatch(action, context) {
         try {
+            console.log(`Dispatching action: ${JSON.stringify(action)} with context: ${JSON.stringify(context)}`);
             // Validate action against its domain schema
+            console.log('Validating action against schema...');
             const validationResult = registry_1.domainRegistry.validateAction(action);
             if (validationResult !== true) {
                 // If validation fails, return the error
+                console.error(`Validation failed: ${JSON.stringify(validationResult)}`);
                 return {
                     success: false,
                     error: `Validation failed: ${validationResult.toString()}`
                 };
             }
+            console.log('Action validation successful');
             // Get current state for the domain
+            console.log(`Getting current state for domain: ${action.domain}`);
             const currentState = await state_1.stateManager.getState(action.domain);
+            console.log(`Current state: ${JSON.stringify(currentState)}`);
             // Execute the reducer to get the new state
+            console.log('Executing reducer...');
             const newState = registry_1.domainRegistry.executeAction(action, currentState, context);
+            console.log(`New state after reducer: ${JSON.stringify(newState)}`);
             // Save the new state and log the action
+            console.log('Saving state and logging action...');
             await state_1.stateManager.saveState(action.domain, newState, action, context);
+            console.log('State saved successfully');
             return {
                 success: true,
                 newState
@@ -35327,13 +35337,17 @@ class StateManager {
      * Save state and log the action
      */
     async saveState(domain, state, action, context) {
+        console.log(`StateManager: Saving state for domain: ${domain}`);
         // Make sure domain directory exists
         const domainDir = path_1.default.join(this.basePath, domain);
+        console.log(`StateManager: Ensuring directory exists: ${domainDir}`);
         await this.ensureDirectoryExists(domainDir);
         // Prepare state file path
         const statePath = this.getStatePath(domain);
+        console.log(`StateManager: State file path: ${statePath}`);
         // Prepare action log path
         const logPath = this.getActionLogPath(domain);
+        console.log(`StateManager: Action log path: ${logPath}`);
         // Create log entry
         const logEntry = {
             action,
@@ -35344,19 +35358,34 @@ class StateManager {
         let currentLog = '';
         try {
             currentLog = await promises_1.default.readFile(logPath, 'utf-8');
+            console.log(`StateManager: Successfully read existing log file`);
         }
         catch (error) {
-            if (error.code !== 'ENOENT')
+            if (error.code !== 'ENOENT') {
+                console.error(`StateManager: Error reading log file: ${error.message}`);
                 throw error;
+            }
+            console.log(`StateManager: Log file does not exist yet, starting with empty string`);
             // If file doesn't exist, start with empty string
         }
         // Append the new log entry
         const updatedLog = currentLog + JSON.stringify(logEntry) + '\n';
-        // Save both files
-        await Promise.all([
-            promises_1.default.writeFile(statePath, JSON.stringify(state, null, 2)),
-            promises_1.default.writeFile(logPath, updatedLog)
-        ]);
+        // Debug current working directory
+        console.log(`StateManager: Current working directory: ${process.cwd()}`);
+        try {
+            // Save state file
+            console.log(`StateManager: Writing state file to ${statePath}`);
+            await promises_1.default.writeFile(statePath, JSON.stringify(state, null, 2));
+            console.log(`StateManager: State file written successfully`);
+            // Save log file
+            console.log(`StateManager: Writing log file to ${logPath}`);
+            await promises_1.default.writeFile(logPath, updatedLog);
+            console.log(`StateManager: Log file written successfully`);
+        }
+        catch (error) {
+            console.error(`StateManager: Error writing files: ${error}`);
+            throw error;
+        }
     }
     /**
      * Get action log entries for a domain
@@ -35408,7 +35437,8 @@ class StateManager {
 }
 exports.StateManager = StateManager;
 // Create and export a default state manager instance
-exports.stateManager = new StateManager('domains');
+// Use absolute path based on current working directory
+exports.stateManager = new StateManager(path_1.default.join(process.cwd(), 'domains'));
 
 
 /***/ }),
