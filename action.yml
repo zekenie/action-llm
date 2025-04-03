@@ -1,4 +1,4 @@
-name: 'Action AI'
+name: 'GitHub LLM Actions System'
 description: 'Process actions from GitHub issues using a reducer system'
 inputs:
   github-token:

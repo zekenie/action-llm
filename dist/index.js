@@ -6814,104 +6814,6 @@ legacyRestEndpointMethods.VERSION = VERSION;
 
 /***/ }),
 
-/***/ 3708:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// pkg/dist-src/index.js
-var dist_src_exports = {};
-__export(dist_src_exports, {
-  RequestError: () => RequestError
-});
-module.exports = __toCommonJS(dist_src_exports);
-var import_deprecation = __nccwpck_require__(4150);
-var import_once = __toESM(__nccwpck_require__(5560));
-var logOnceCode = (0, import_once.default)((deprecation) => console.warn(deprecation));
-var logOnceHeaders = (0, import_once.default)((deprecation) => console.warn(deprecation));
-var RequestError = class extends Error {
-  constructor(message, statusCode, options) {
-    super(message);
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
-    this.name = "HttpError";
-    this.status = statusCode;
-    let headers;
-    if ("headers" in options && typeof options.headers !== "undefined") {
-      headers = options.headers;
-    }
-    if ("response" in options) {
-      this.response = options.response;
-      headers = options.response.headers;
-    }
-    const requestCopy = Object.assign({}, options.request);
-    if (options.request.headers.authorization) {
-      requestCopy.headers = Object.assign({}, options.request.headers, {
-        authorization: options.request.headers.authorization.replace(
-          /(?<! ) .*$/,
-          " [REDACTED]"
-        )
-      });
-    }
-    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
-    this.request = requestCopy;
-    Object.defineProperty(this, "code", {
-      get() {
-        logOnceCode(
-          new import_deprecation.Deprecation(
-            "[@octokit/request-error] `error.code` is deprecated, use `error.status`."
-          )
-        );
-        return statusCode;
-      }
-    });
-    Object.defineProperty(this, "headers", {
-      get() {
-        logOnceHeaders(
-          new import_deprecation.Deprecation(
-            "[@octokit/request-error] `error.headers` is deprecated, use `error.response.headers`."
-          )
-        );
-        return headers || {};
-      }
-    });
-  }
-};
-// Annotate the CommonJS export names for ESM import in node:
-0 && (0);
-
-
-/***/ }),
-
 /***/ 8636:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -6961,7 +6863,7 @@ function isPlainObject(value) {
 }
 
 // pkg/dist-src/fetch-wrapper.js
-var import_request_error = __nccwpck_require__(3708);
+var import_request_error = __nccwpck_require__(4071);
 
 // pkg/dist-src/get-buffer-response.js
 function getBufferResponse(response) {
@@ -7136,6 +7038,104 @@ var request = withDefaults(import_endpoint.endpoint, {
     "user-agent": `octokit-request.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`
   }
 });
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+
+
+/***/ }),
+
+/***/ 4071:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// pkg/dist-src/index.js
+var dist_src_exports = {};
+__export(dist_src_exports, {
+  RequestError: () => RequestError
+});
+module.exports = __toCommonJS(dist_src_exports);
+var import_deprecation = __nccwpck_require__(4150);
+var import_once = __toESM(__nccwpck_require__(5560));
+var logOnceCode = (0, import_once.default)((deprecation) => console.warn(deprecation));
+var logOnceHeaders = (0, import_once.default)((deprecation) => console.warn(deprecation));
+var RequestError = class extends Error {
+  constructor(message, statusCode, options) {
+    super(message);
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+    this.name = "HttpError";
+    this.status = statusCode;
+    let headers;
+    if ("headers" in options && typeof options.headers !== "undefined") {
+      headers = options.headers;
+    }
+    if ("response" in options) {
+      this.response = options.response;
+      headers = options.response.headers;
+    }
+    const requestCopy = Object.assign({}, options.request);
+    if (options.request.headers.authorization) {
+      requestCopy.headers = Object.assign({}, options.request.headers, {
+        authorization: options.request.headers.authorization.replace(
+          /(?<! ) .*$/,
+          " [REDACTED]"
+        )
+      });
+    }
+    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
+    this.request = requestCopy;
+    Object.defineProperty(this, "code", {
+      get() {
+        logOnceCode(
+          new import_deprecation.Deprecation(
+            "[@octokit/request-error] `error.code` is deprecated, use `error.status`."
+          )
+        );
+        return statusCode;
+      }
+    });
+    Object.defineProperty(this, "headers", {
+      get() {
+        logOnceHeaders(
+          new import_deprecation.Deprecation(
+            "[@octokit/request-error] `error.headers` is deprecated, use `error.response.headers`."
+          )
+        );
+        return headers || {};
+      }
+    });
+  }
+};
 // Annotate the CommonJS export names for ESM import in node:
 0 && (0);
 
@@ -34455,339 +34455,15 @@ exports.NEVER = parseUtil_1.INVALID;
 
 /***/ }),
 
-/***/ 1717:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.initialState = exports.TeamActionSchema = exports.TeamActionTypes = exports.TeamManagementStateSchema = void 0;
-exports.reduce = reduce;
-const zod_1 = __nccwpck_require__(4809);
-const types_1 = __nccwpck_require__(7190);
-/**
- * Team state structure
- */
-const TeamSchema = zod_1.z.object({
-    description: zod_1.z.string(),
-    owner: zod_1.z.string(),
-    members: zod_1.z.array(zod_1.z.string()),
-    createdAt: zod_1.z.string()
-});
-exports.TeamManagementStateSchema = (0, types_1.VersionedStateSchema)(zod_1.z.object({
-    teams: zod_1.z.record(zod_1.z.string(), TeamSchema)
-}));
-/**
- * Team action types
- */
-var TeamActionTypes;
-(function (TeamActionTypes) {
-    TeamActionTypes["ADD_TO_TEAM"] = "ADD_TO_TEAM";
-    TeamActionTypes["REMOVE_FROM_TEAM"] = "REMOVE_FROM_TEAM";
-    TeamActionTypes["CREATE_TEAM"] = "CREATE_TEAM";
-    TeamActionTypes["UPDATE_TEAM_DESCRIPTION"] = "UPDATE_TEAM_DESCRIPTION";
-})(TeamActionTypes || (exports.TeamActionTypes = TeamActionTypes = {}));
-/**
- * Team action schemas
- */
-const AddToTeamSchema = zod_1.z.object({
-    domain: zod_1.z.literal('team-management'),
-    type: zod_1.z.literal(TeamActionTypes.ADD_TO_TEAM),
-    payload: zod_1.z.object({
-        username: zod_1.z.string(),
-        teamName: zod_1.z.string()
-    })
-});
-const RemoveFromTeamSchema = zod_1.z.object({
-    domain: zod_1.z.literal('team-management'),
-    type: zod_1.z.literal(TeamActionTypes.REMOVE_FROM_TEAM),
-    payload: zod_1.z.object({
-        username: zod_1.z.string(),
-        teamName: zod_1.z.string()
-    })
-});
-const CreateTeamSchema = zod_1.z.object({
-    domain: zod_1.z.literal('team-management'),
-    type: zod_1.z.literal(TeamActionTypes.CREATE_TEAM),
-    payload: zod_1.z.object({
-        teamName: zod_1.z.string(),
-        description: zod_1.z.string(),
-        owner: zod_1.z.string().optional()
-    })
-});
-const UpdateTeamDescriptionSchema = zod_1.z.object({
-    domain: zod_1.z.literal('team-management'),
-    type: zod_1.z.literal(TeamActionTypes.UPDATE_TEAM_DESCRIPTION),
-    payload: zod_1.z.object({
-        teamName: zod_1.z.string(),
-        description: zod_1.z.string()
-    })
-});
-exports.TeamActionSchema = zod_1.z.discriminatedUnion('type', [
-    AddToTeamSchema,
-    RemoveFromTeamSchema,
-    CreateTeamSchema,
-    UpdateTeamDescriptionSchema
-]);
-/**
- * Initial state for team management
- */
-exports.initialState = {
-    schemaVersion: 1,
-    data: {
-        teams: {}
-    }
-};
-/**
- * Team management reducer
- */
-function reduce(state, action, context) {
-    switch (action.type) {
-        case TeamActionTypes.ADD_TO_TEAM: {
-            const { username, teamName } = action.payload;
-            // Validate team exists
-            if (!state.data.teams[teamName]) {
-                throw new Error(`Team ${teamName} does not exist`);
-            }
-            // Check if user already in team
-            if (state.data.teams[teamName].members.includes(username)) {
-                return state; // No change needed
-            }
-            return {
-                ...state,
-                data: {
-                    ...state.data,
-                    teams: {
-                        ...state.data.teams,
-                        [teamName]: {
-                            ...state.data.teams[teamName],
-                            members: [...state.data.teams[teamName].members, username]
-                        }
-                    }
-                }
-            };
-        }
-        case TeamActionTypes.REMOVE_FROM_TEAM: {
-            const { username, teamName } = action.payload;
-            // Validate team exists
-            if (!state.data.teams[teamName]) {
-                throw new Error(`Team ${teamName} does not exist`);
-            }
-            // Check if user is in team
-            if (!state.data.teams[teamName].members.includes(username)) {
-                return state; // No change needed
-            }
-            return {
-                ...state,
-                data: {
-                    ...state.data,
-                    teams: {
-                        ...state.data.teams,
-                        [teamName]: {
-                            ...state.data.teams[teamName],
-                            members: state.data.teams[teamName].members.filter(member => member !== username)
-                        }
-                    }
-                }
-            };
-        }
-        case TeamActionTypes.CREATE_TEAM: {
-            const { teamName, description, owner } = action.payload;
-            // Validate team doesn't already exist
-            if (state.data.teams[teamName]) {
-                throw new Error(`Team ${teamName} already exists`);
-            }
-            // Use the action initiator as the default owner if not specified
-            const actualOwner = owner || context.username;
-            return {
-                ...state,
-                data: {
-                    ...state.data,
-                    teams: {
-                        ...state.data.teams,
-                        [teamName]: {
-                            description,
-                            owner: actualOwner,
-                            members: [actualOwner], // Owner is automatically a member
-                            createdAt: context.timestamp
-                        }
-                    }
-                }
-            };
-        }
-        case TeamActionTypes.UPDATE_TEAM_DESCRIPTION: {
-            const { teamName, description } = action.payload;
-            // Validate team exists
-            if (!state.data.teams[teamName]) {
-                throw new Error(`Team ${teamName} does not exist`);
-            }
-            return {
-                ...state,
-                data: {
-                    ...state.data,
-                    teams: {
-                        ...state.data.teams,
-                        [teamName]: {
-                            ...state.data.teams[teamName],
-                            description
-                        }
-                    }
-                }
-            };
-        }
-        default:
-            return state;
-    }
-}
-// Export the team management domain
-exports["default"] = {
-    actionSchema: exports.TeamActionSchema,
-    stateSchema: exports.TeamManagementStateSchema,
-    initialState: exports.initialState,
-    reduce
-};
-
-
-/***/ }),
-
-/***/ 9407:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(7484));
-const github = __importStar(__nccwpck_require__(3228));
-const dispatcher_1 = __nccwpck_require__(3729);
-const registry_1 = __nccwpck_require__(6471);
-// Import domains
-const team_management_1 = __importDefault(__nccwpck_require__(1717));
-// Register domains
-registry_1.domainRegistry.registerDomain('team-management', team_management_1.default);
-async function extractActionFromIssueBody(body) {
-    try {
-        // Assuming the issue body contains valid JSON for an action
-        const action = JSON.parse(body);
-        return action;
-    }
-    catch (error) {
-        core.warning(`Failed to parse action from issue body: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        return null;
-    }
-}
-async function run() {
-    try {
-        // Get GitHub token
-        const token = core.getInput('github-token', { required: true });
-        const octokit = github.getOctokit(token);
-        // Get the event that triggered the action
-        const context = github.context;
-        // Check if this is a new issue
-        if (context.eventName === 'issues' && context.payload.action === 'opened') {
-            const issue = context.payload.issue;
-            const repo = context.repo;
-            core.info(`Processing issue #${issue.number}: ${issue.title}`);
-            // Extract action from issue body
-            const action = await extractActionFromIssueBody(issue.body || '');
-            // If we couldn't extract an action, post a comment explaining the format
-            if (!action) {
-                await octokit.rest.issues.createComment({
-                    ...repo,
-                    issue_number: issue.number,
-                    body: `Failed to extract an action from the issue body. The body should contain a valid JSON object with domain, type, and payload properties.`
-                });
-                return;
-            }
-            // Create GitHub context for the action
-            const githubContext = {
-                username: issue.user.login,
-                repository: {
-                    owner: repo.owner,
-                    repo: repo.repo
-                },
-                issueNumber: issue.number,
-                timestamp: new Date().toISOString()
-            };
-            // Dispatch the action
-            const result = await dispatcher_1.actionDispatcher.dispatch(action, githubContext);
-            // Post result as a comment
-            if (result.success) {
-                await octokit.rest.issues.createComment({
-                    ...repo,
-                    issue_number: issue.number,
-                    body: `✅ Action processed successfully!\n\n\`\`\`json\n${JSON.stringify(result.newState, null, 2)}\n\`\`\``
-                });
-                core.info(`Action processed successfully!`);
-            }
-            else {
-                await octokit.rest.issues.createComment({
-                    ...repo,
-                    issue_number: issue.number,
-                    body: `❌ Failed to process action: ${result.error}`
-                });
-                core.error(`Failed to process action: ${result.error}`);
-            }
-        }
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            core.setFailed(error.message);
-        }
-        else {
-            core.setFailed('An unknown error occurred');
-        }
-    }
-}
-run();
-
-
-/***/ }),
-
-/***/ 3729:
+/***/ 4974:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.actionDispatcher = exports.ActionDispatcher = void 0;
-const registry_1 = __nccwpck_require__(6471);
-const state_1 = __nccwpck_require__(445);
+const registry_1 = __nccwpck_require__(7260);
+const state_1 = __nccwpck_require__(3116);
 /**
  * Dispatches actions to the appropriate reducers and manages state updates
  */
@@ -34838,7 +34514,142 @@ exports.actionDispatcher = new ActionDispatcher();
 
 /***/ }),
 
-/***/ 6471:
+/***/ 6053:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GitHubClient = void 0;
+const github = __importStar(__nccwpck_require__(3228));
+/**
+ * GitHub client for interacting with the GitHub API
+ */
+class GitHubClient {
+    octokit;
+    owner;
+    repo;
+    constructor(token, owner, repo) {
+        this.octokit = github.getOctokit(token);
+        this.owner = owner;
+        this.repo = repo;
+    }
+    /**
+     * Create a comment on an issue
+     */
+    async createIssueComment(issueNumber, body) {
+        await this.octokit.rest.issues.createComment({
+            owner: this.owner,
+            repo: this.repo,
+            issue_number: issueNumber,
+            body
+        });
+    }
+    /**
+     * Get the content of a file from the repository
+     */
+    async getFileContent(path) {
+        try {
+            const response = await this.octokit.rest.repos.getContent({
+                owner: this.owner,
+                repo: this.repo,
+                path
+            });
+            // Handle file response
+            if ('content' in response.data && !Array.isArray(response.data)) {
+                const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+                return content;
+            }
+            throw new Error(`Not a file: ${path}`);
+        }
+        catch (error) {
+            // Pass through 404 errors (file not found)
+            if (error.status === 404) {
+                throw error;
+            }
+            console.error(`Error getting file content for ${path}:`, error);
+            throw new Error(`Failed to get file content: ${error.message}`);
+        }
+    }
+    /**
+     * Update a file in the repository
+     */
+    async updateFile(path, content, message) {
+        try {
+            // Try to get the current file to get its SHA
+            let sha;
+            try {
+                const response = await this.octokit.rest.repos.getContent({
+                    owner: this.owner,
+                    repo: this.repo,
+                    path
+                });
+                // Handle file response
+                if ('sha' in response.data && !Array.isArray(response.data)) {
+                    sha = response.data.sha;
+                }
+            }
+            catch (error) {
+                // If file doesn't exist (404), that's fine - we'll create it
+                if (error.status !== 404) {
+                    throw error;
+                }
+            }
+            // Update or create the file
+            await this.octokit.rest.repos.createOrUpdateFileContents({
+                owner: this.owner,
+                repo: this.repo,
+                path,
+                message,
+                content: Buffer.from(content).toString('base64'),
+                sha // Include SHA if we're updating an existing file
+            });
+        }
+        catch (error) {
+            console.error(`Error updating file ${path}:`, error);
+            throw new Error(`Failed to update file: ${error.message}`);
+        }
+    }
+}
+exports.GitHubClient = GitHubClient;
+
+
+/***/ }),
+
+/***/ 7260:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -34926,7 +34737,7 @@ exports.domainRegistry = new DomainRegistry();
 
 /***/ }),
 
-/***/ 445:
+/***/ 3116:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -34938,7 +34749,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.stateManager = exports.StateManager = void 0;
 const promises_1 = __importDefault(__nccwpck_require__(1943));
 const path_1 = __importDefault(__nccwpck_require__(6928));
-const registry_1 = __nccwpck_require__(6471);
+const registry_1 = __nccwpck_require__(7260);
 /**
  * Manages state files and action logs for domains
  */
@@ -35050,12 +34861,12 @@ class StateManager {
 }
 exports.StateManager = StateManager;
 // Create and export a default state manager instance
-exports.stateManager = new StateManager('domains');
+exports.stateManager = new StateManager('.');
 
 
 /***/ }),
 
-/***/ 7190:
+/***/ 5919:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -35079,6 +34890,343 @@ const VersionedStateSchema = (dataSchema) => zod_1.z.object({
     data: dataSchema
 });
 exports.VersionedStateSchema = VersionedStateSchema;
+
+
+/***/ }),
+
+/***/ 9407:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core = __importStar(__nccwpck_require__(7484));
+const github = __importStar(__nccwpck_require__(3228));
+const dispatcher_1 = __nccwpck_require__(4974);
+const registry_1 = __nccwpck_require__(7260);
+const client_1 = __nccwpck_require__(6053);
+// Import domain reducers
+const reducer_1 = __importDefault(__nccwpck_require__(54));
+// Register domains
+registry_1.domainRegistry.registerDomain('team-management', reducer_1.default);
+// Extract action from issue body
+async function extractActionFromIssueBody(body) {
+    try {
+        // Assuming the issue body contains valid JSON for an action
+        const action = JSON.parse(body);
+        return action;
+    }
+    catch (error) {
+        core.warning(`Failed to parse action from issue body: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return null;
+    }
+}
+async function run() {
+    try {
+        // Get GitHub token
+        const token = core.getInput('github-token', { required: true });
+        const octokit = github.getOctokit(token);
+        // Get the event that triggered the action
+        const context = github.context;
+        // Check if this is a new issue
+        if (context.eventName === 'issues' && context.payload.action === 'opened') {
+            const issue = context.payload.issue;
+            const repo = context.repo;
+            core.info(`Processing issue #${issue.number}: ${issue.title}`);
+            // Create GitHub client
+            const githubClient = new client_1.GitHubClient(token, repo.owner, repo.repo);
+            // Extract action from issue body
+            const action = await extractActionFromIssueBody(issue.body || '');
+            // If we couldn't extract an action, post a comment explaining the format
+            if (!action) {
+                await githubClient.createIssueComment(issue.number, `Failed to extract an action from the issue body. The body should contain a valid JSON object with domain, type, and payload properties.`);
+                return;
+            }
+            // Create GitHub context for the action
+            const githubContext = {
+                username: issue.user.login,
+                repository: {
+                    owner: repo.owner,
+                    repo: repo.repo
+                },
+                issueNumber: issue.number,
+                timestamp: new Date().toISOString()
+            };
+            // Dispatch the action
+            const result = await dispatcher_1.actionDispatcher.dispatch(action, githubContext);
+            // Post result as a comment
+            if (result.success) {
+                await githubClient.createIssueComment(issue.number, `✅ Action processed successfully!\n\n\`\`\`json\n${JSON.stringify(result.newState, null, 2)}\n\`\`\``);
+                core.info(`Action processed successfully!`);
+            }
+            else {
+                await githubClient.createIssueComment(issue.number, `❌ Failed to process action: ${result.error}`);
+                core.error(`Failed to process action: ${result.error}`);
+            }
+        }
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            core.setFailed(error.message);
+        }
+        else {
+            core.setFailed('An unknown error occurred');
+        }
+    }
+}
+run();
+
+
+/***/ }),
+
+/***/ 54:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.initialState = exports.TeamActionSchema = exports.TeamManagementStateSchema = void 0;
+exports.reduce = reduce;
+const zod_1 = __nccwpck_require__(4809);
+const types_1 = __nccwpck_require__(5919);
+const types_2 = __nccwpck_require__(3427);
+/**
+ * Team schema for validation
+ */
+const TeamSchema = zod_1.z.object({
+    description: zod_1.z.string(),
+    owner: zod_1.z.string(),
+    members: zod_1.z.array(zod_1.z.string()),
+    createdAt: zod_1.z.string()
+});
+/**
+ * Team management state schema
+ */
+exports.TeamManagementStateSchema = (0, types_1.VersionedStateSchema)(zod_1.z.object({
+    teams: zod_1.z.record(zod_1.z.string(), TeamSchema)
+}));
+/**
+ * Team action schemas
+ */
+const AddToTeamSchema = zod_1.z.object({
+    domain: zod_1.z.literal('team-management'),
+    type: zod_1.z.literal(types_2.TeamActionTypes.ADD_TO_TEAM),
+    payload: zod_1.z.object({
+        username: zod_1.z.string(),
+        teamName: zod_1.z.string()
+    })
+});
+const RemoveFromTeamSchema = zod_1.z.object({
+    domain: zod_1.z.literal('team-management'),
+    type: zod_1.z.literal(types_2.TeamActionTypes.REMOVE_FROM_TEAM),
+    payload: zod_1.z.object({
+        username: zod_1.z.string(),
+        teamName: zod_1.z.string()
+    })
+});
+const CreateTeamSchema = zod_1.z.object({
+    domain: zod_1.z.literal('team-management'),
+    type: zod_1.z.literal(types_2.TeamActionTypes.CREATE_TEAM),
+    payload: zod_1.z.object({
+        teamName: zod_1.z.string(),
+        description: zod_1.z.string(),
+        owner: zod_1.z.string().optional()
+    })
+});
+const UpdateTeamDescriptionSchema = zod_1.z.object({
+    domain: zod_1.z.literal('team-management'),
+    type: zod_1.z.literal(types_2.TeamActionTypes.UPDATE_TEAM_DESCRIPTION),
+    payload: zod_1.z.object({
+        teamName: zod_1.z.string(),
+        description: zod_1.z.string()
+    })
+});
+/**
+ * Combined action schema
+ */
+exports.TeamActionSchema = zod_1.z.discriminatedUnion('type', [
+    AddToTeamSchema,
+    RemoveFromTeamSchema,
+    CreateTeamSchema,
+    UpdateTeamDescriptionSchema
+]);
+/**
+ * Initial state for team management
+ */
+exports.initialState = {
+    schemaVersion: 1,
+    data: {
+        teams: {}
+    }
+};
+/**
+ * Team management reducer
+ */
+function reduce(state = exports.initialState, action, context) {
+    switch (action.type) {
+        case types_2.TeamActionTypes.ADD_TO_TEAM: {
+            const { username, teamName } = action.payload;
+            // Validate team exists
+            if (!state.data.teams[teamName]) {
+                throw new Error(`Team ${teamName} does not exist`);
+            }
+            // Check if user already in team
+            if (state.data.teams[teamName].members.includes(username)) {
+                return state; // No change needed
+            }
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    teams: {
+                        ...state.data.teams,
+                        [teamName]: {
+                            ...state.data.teams[teamName],
+                            members: [...state.data.teams[teamName].members, username]
+                        }
+                    }
+                }
+            };
+        }
+        case types_2.TeamActionTypes.REMOVE_FROM_TEAM: {
+            const { username, teamName } = action.payload;
+            // Validate team exists
+            if (!state.data.teams[teamName]) {
+                throw new Error(`Team ${teamName} does not exist`);
+            }
+            // Check if user is in team
+            if (!state.data.teams[teamName].members.includes(username)) {
+                return state; // No change needed
+            }
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    teams: {
+                        ...state.data.teams,
+                        [teamName]: {
+                            ...state.data.teams[teamName],
+                            members: state.data.teams[teamName].members.filter(member => member !== username)
+                        }
+                    }
+                }
+            };
+        }
+        case types_2.TeamActionTypes.CREATE_TEAM: {
+            const { teamName, description, owner } = action.payload;
+            // Validate team doesn't already exist
+            if (state.data.teams[teamName]) {
+                throw new Error(`Team ${teamName} already exists`);
+            }
+            // Use the action initiator as the default owner if not specified
+            const actualOwner = owner || context.username;
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    teams: {
+                        ...state.data.teams,
+                        [teamName]: {
+                            description,
+                            owner: actualOwner,
+                            members: [actualOwner], // Owner is automatically a member
+                            createdAt: context.timestamp
+                        }
+                    }
+                }
+            };
+        }
+        case types_2.TeamActionTypes.UPDATE_TEAM_DESCRIPTION: {
+            const { teamName, description } = action.payload;
+            // Validate team exists
+            if (!state.data.teams[teamName]) {
+                throw new Error(`Team ${teamName} does not exist`);
+            }
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    teams: {
+                        ...state.data.teams,
+                        [teamName]: {
+                            ...state.data.teams[teamName],
+                            description
+                        }
+                    }
+                }
+            };
+        }
+        default:
+            return state;
+    }
+}
+// Export complete reducer module
+exports["default"] = {
+    actionSchema: exports.TeamActionSchema,
+    stateSchema: exports.TeamManagementStateSchema,
+    initialState: exports.initialState,
+    reduce
+};
+
+
+/***/ }),
+
+/***/ 3427:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * Team Management Domain - Type Definitions
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TeamActionTypes = void 0;
+/**
+ * Team action types
+ */
+var TeamActionTypes;
+(function (TeamActionTypes) {
+    TeamActionTypes["ADD_TO_TEAM"] = "ADD_TO_TEAM";
+    TeamActionTypes["REMOVE_FROM_TEAM"] = "REMOVE_FROM_TEAM";
+    TeamActionTypes["CREATE_TEAM"] = "CREATE_TEAM";
+    TeamActionTypes["UPDATE_TEAM_DESCRIPTION"] = "UPDATE_TEAM_DESCRIPTION";
+})(TeamActionTypes || (exports.TeamActionTypes = TeamActionTypes = {}));
 
 
 /***/ }),

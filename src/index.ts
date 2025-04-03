@@ -1,16 +1,17 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { Action, GitHubContext } from './lib/types';
-import { actionDispatcher } from './lib/dispatcher';
-import { domainRegistry } from './lib/registry';
-import { stateManager } from './lib/state';
+import { Action, GitHubContext } from '../lib/types';
+import { actionDispatcher } from '../lib/dispatcher';
+import { domainRegistry } from '../lib/registry';
+import { GitHubClient } from '../lib/github/client';
 
-// Import domains
-import teamManagementDomain from './domains/team-management';
+// Import domain reducers
+import teamManagementReducer from '../team-management/reducer';
 
 // Register domains
-domainRegistry.registerDomain('team-management', teamManagementDomain);
+domainRegistry.registerDomain('team-management', teamManagementReducer);
 
+// Extract action from issue body
 async function extractActionFromIssueBody(body: string): Promise<Action | null> {
   try {
     // Assuming the issue body contains valid JSON for an action
@@ -38,16 +39,18 @@ async function run(): Promise<void> {
       
       core.info(`Processing issue #${issue.number}: ${issue.title}`);
       
+      // Create GitHub client
+      const githubClient = new GitHubClient(token, repo.owner, repo.repo);
+      
       // Extract action from issue body
       const action = await extractActionFromIssueBody(issue.body || '');
       
       // If we couldn't extract an action, post a comment explaining the format
       if (!action) {
-        await octokit.rest.issues.createComment({
-          ...repo,
-          issue_number: issue.number,
-          body: `Failed to extract an action from the issue body. The body should contain a valid JSON object with domain, type, and payload properties.`
-        });
+        await githubClient.createIssueComment(
+          issue.number,
+          `Failed to extract an action from the issue body. The body should contain a valid JSON object with domain, type, and payload properties.`
+        );
         return;
       }
       
@@ -67,19 +70,17 @@ async function run(): Promise<void> {
       
       // Post result as a comment
       if (result.success) {
-        await octokit.rest.issues.createComment({
-          ...repo,
-          issue_number: issue.number,
-          body: `✅ Action processed successfully!\n\n\`\`\`json\n${JSON.stringify(result.newState, null, 2)}\n\`\`\``
-        });
+        await githubClient.createIssueComment(
+          issue.number,
+          `✅ Action processed successfully!\n\n\`\`\`json\n${JSON.stringify(result.newState, null, 2)}\n\`\`\``
+        );
         
         core.info(`Action processed successfully!`);
       } else {
-        await octokit.rest.issues.createComment({
-          ...repo,
-          issue_number: issue.number,
-          body: `❌ Failed to process action: ${result.error}`
-        });
+        await githubClient.createIssueComment(
+          issue.number,
+          `❌ Failed to process action: ${result.error}`
+        );
         
         core.error(`Failed to process action: ${result.error}`);
       }
