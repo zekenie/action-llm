@@ -1,0 +1,18 @@
+name: Issue Action
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  process-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process Issue
+        uses: ./ # Uses the action in the root directory
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

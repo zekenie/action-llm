@@ -2,7 +2,7 @@ name: 'GitHub LLM Actions System'
 description: 'Process actions from GitHub issues using a reducer system'
 inputs:
   github-token:
-    description: 'GitHub token'
+    description: 'GitHub token with write permissions to the repository'
     required: true
     default: ${{ github.token }}
 runs:
