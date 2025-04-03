@@ -34755,8 +34755,15 @@ const registry_1 = __nccwpck_require__(7260);
  */
 class StateManager {
     basePath;
+    githubClient = null;
     constructor(basePath) {
         this.basePath = basePath;
+    }
+    /**
+     * Set the GitHub client for remote operations
+     */
+    setGitHubClient(client) {
+        this.githubClient = client;
     }
     /**
      * Get the current state for a domain
@@ -34764,28 +34771,46 @@ class StateManager {
     async getState(domain) {
         const statePath = this.getStatePath(domain);
         try {
-            // Try to read the state file
-            const content = await promises_1.default.readFile(statePath, 'utf-8');
+            let content;
+            // Try to get content from GitHub if client is available
+            if (this.githubClient) {
+                try {
+                    content = await this.githubClient.getFileContent(statePath);
+                }
+                catch (error) {
+                    if (error.status === 404) {
+                        // If file doesn't exist in GitHub, return initial state
+                        return registry_1.domainRegistry.getInitialState(domain);
+                    }
+                    throw error;
+                }
+            }
+            else {
+                // Otherwise read from local filesystem
+                try {
+                    content = await promises_1.default.readFile(statePath, 'utf-8');
+                }
+                catch (error) {
+                    if (error.code === 'ENOENT') {
+                        // If file doesn't exist locally, return initial state
+                        return registry_1.domainRegistry.getInitialState(domain);
+                    }
+                    throw error;
+                }
+            }
             return JSON.parse(content);
         }
         catch (error) {
-            // If the file doesn't exist, return the initial state
-            if (error.code === 'ENOENT') {
-                return registry_1.domainRegistry.getInitialState(domain);
-            }
-            throw error;
+            console.error(`Error getting state for domain ${domain}:`, error);
+            return registry_1.domainRegistry.getInitialState(domain);
         }
     }
     /**
      * Save state and log the action
      */
     async saveState(domain, state, action, context) {
-        // Make sure domain directory exists
-        const domainDir = path_1.default.join(this.basePath, domain);
-        await this.ensureDirectoryExists(domainDir);
-        // Prepare state file path
+        // Prepare file paths
         const statePath = this.getStatePath(domain);
-        // Prepare action log path
         const logPath = this.getActionLogPath(domain);
         // Create log entry
         const logEntry = {
@@ -34795,21 +34820,47 @@ class StateManager {
         };
         // Get the current log content or start with empty string
         let currentLog = '';
-        try {
-            currentLog = await promises_1.default.readFile(logPath, 'utf-8');
+        if (this.githubClient) {
+            try {
+                currentLog = await this.githubClient.getFileContent(logPath);
+            }
+            catch (error) {
+                if (error.status !== 404)
+                    throw error;
+                // If file doesn't exist, start with empty string
+            }
         }
-        catch (error) {
-            if (error.code !== 'ENOENT')
-                throw error;
-            // If file doesn't exist, start with empty string
+        else {
+            try {
+                currentLog = await promises_1.default.readFile(logPath, 'utf-8');
+            }
+            catch (error) {
+                if (error.code !== 'ENOENT')
+                    throw error;
+                // If file doesn't exist, start with empty string
+            }
         }
         // Append the new log entry
         const updatedLog = currentLog + JSON.stringify(logEntry) + '\n';
-        // Save both files
-        await Promise.all([
-            promises_1.default.writeFile(statePath, JSON.stringify(state, null, 2)),
-            promises_1.default.writeFile(logPath, updatedLog)
-        ]);
+        // Save to GitHub if client is available
+        if (this.githubClient) {
+            const commitMessage = `${action.type}: ${JSON.stringify(action.payload)}`;
+            // First update the state file
+            await this.githubClient.updateFile(statePath, JSON.stringify(state, null, 2), commitMessage);
+            // Then update the log file
+            await this.githubClient.updateFile(logPath, updatedLog, `Update action log for ${commitMessage}`);
+        }
+        else {
+            // Otherwise save to local filesystem
+            // Ensure the domain directory exists
+            const domainDir = path_1.default.join(this.basePath, domain);
+            await this.ensureDirectoryExists(domainDir);
+            // Save both files
+            await Promise.all([
+                promises_1.default.writeFile(statePath, JSON.stringify(state, null, 2)),
+                promises_1.default.writeFile(logPath, updatedLog)
+            ]);
+        }
     }
     /**
      * Get action log entries for a domain
@@ -34817,8 +34868,31 @@ class StateManager {
     async getActionLog(domain, limit = 100) {
         const logPath = this.getActionLogPath(domain);
         try {
-            // Get the log file content
-            const content = await promises_1.default.readFile(logPath, 'utf-8');
+            let content;
+            // Try to get content from GitHub if client is available
+            if (this.githubClient) {
+                try {
+                    content = await this.githubClient.getFileContent(logPath);
+                }
+                catch (error) {
+                    if (error.status === 404) {
+                        return []; // Return empty array if log doesn't exist yet
+                    }
+                    throw error;
+                }
+            }
+            else {
+                // Otherwise read from local filesystem
+                try {
+                    content = await promises_1.default.readFile(logPath, 'utf-8');
+                }
+                catch (error) {
+                    if (error.code === 'ENOENT') {
+                        return []; // Return empty array if log doesn't exist yet
+                    }
+                    throw error;
+                }
+            }
             // Split by newlines and parse each line as JSON
             const entries = content
                 .split('\n')
@@ -34829,23 +34903,21 @@ class StateManager {
             return entries;
         }
         catch (error) {
-            if (error.code === 'ENOENT') {
-                return []; // Return empty array if log doesn't exist yet
-            }
-            throw error;
+            console.error(`Error getting action log for domain ${domain}:`, error);
+            return [];
         }
     }
     /**
      * Helper to get the state file path
      */
     getStatePath(domain) {
-        return path_1.default.join(this.basePath, domain, 'state.json');
+        return `${domain}/state.json`;
     }
     /**
      * Helper to get the action log file path
      */
     getActionLogPath(domain) {
-        return path_1.default.join(this.basePath, domain, 'actions.jsonl');
+        return `${domain}/actions.jsonl`;
     }
     /**
      * Ensure a directory exists
@@ -34940,6 +35012,7 @@ const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const dispatcher_1 = __nccwpck_require__(4974);
 const registry_1 = __nccwpck_require__(7260);
+const state_1 = __nccwpck_require__(3116);
 const client_1 = __nccwpck_require__(6053);
 // Import domain reducers
 const reducer_1 = __importDefault(__nccwpck_require__(54));
@@ -34971,6 +35044,8 @@ async function run() {
             core.info(`Processing issue #${issue.number}: ${issue.title}`);
             // Create GitHub client
             const githubClient = new client_1.GitHubClient(token, repo.owner, repo.repo);
+            // Set GitHub client in state manager for remote operations
+            state_1.stateManager.setGitHubClient(githubClient);
             // Extract action from issue body
             const action = await extractActionFromIssueBody(issue.body || '');
             // If we couldn't extract an action, post a comment explaining the format

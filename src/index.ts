@@ -3,6 +3,7 @@ import * as github from '@actions/github';
 import { Action, GitHubContext } from '../lib/types';
 import { actionDispatcher } from '../lib/dispatcher';
 import { domainRegistry } from '../lib/registry';
+import { stateManager } from '../lib/state';
 import { GitHubClient } from '../lib/github/client';
 
 // Import domain reducers
@@ -41,6 +42,9 @@ async function run(): Promise<void> {
       
       // Create GitHub client
       const githubClient = new GitHubClient(token, repo.owner, repo.repo);
+      
+      // Set GitHub client in state manager for remote operations
+      stateManager.setGitHubClient(githubClient);
       
       // Extract action from issue body
       const action = await extractActionFromIssueBody(issue.body || '');
