@@ -1,5 +1,5 @@
-name: 'Issue Responder'
-description: 'Responds to new GitHub issues with a hello world message'
+name: 'Action AI'
+description: 'Process actions from GitHub issues using a reducer system'
 inputs:
   github-token:
     description: 'GitHub token'
