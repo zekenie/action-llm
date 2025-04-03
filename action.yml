@@ -1,0 +1,13 @@
+name: 'Issue Responder'
+description: 'Responds to new GitHub issues with a hello world message'
+inputs:
+  github-token:
+    description: 'GitHub token'
+    required: true
+    default: ${{ github.token }}
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+branding:
+  icon: 'message-circle'
+  color: 'blue'
