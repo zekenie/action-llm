@@ -189,16 +189,25 @@ async function handleReactionEvent(
   llmEngine: LLMEngine
 ): Promise<void> {
   // Only process new reactions
-  if (context.payload.action !== 'created') return;
+  if (context.payload.action !== 'created') {
+    core.info('Ignoring reaction event that is not "created"');
+    return;
+  }
+  
+  // Log the entire payload for debugging
+  core.info('Reaction event payload:');
+  core.info(JSON.stringify(context.payload, null, 2));
   
   const reaction = context.payload.reaction!;
   const comment = context.payload.comment!;
   const issue = context.payload.issue!;
   const issueNumber = issue.number;
   
+  core.info(`Received reaction "${reaction.content}" from user "${reaction.user?.login}" on comment #${comment.id}`);
+  
   // Only proceed if it's a thumbs up reaction
   if (reaction.content !== '+1') {
-    core.info(`Ignoring reaction: ${reaction.content}`);
+    core.info(`Ignoring reaction: ${reaction.content} (not a thumbs up)`);
     return;
   }
   
@@ -212,9 +221,39 @@ async function handleReactionEvent(
   }
   
   // Extract action from the comment
+  core.info(`Attempting to extract action from comment body: ${comment.body.substring(0, 100)}...`);
   const action = await extractActionDirectly(comment.body);
+  
   if (!action) {
-    core.info('No action found in the comment');
+    core.info('No action found in the comment. Looking for JSON code blocks...');
+    
+    // Try to find JSON code blocks in the comment
+    const codeBlockMatches = comment.body.match(/```(?:json)?\s*({[\s\S]*?})\s*```/g);
+    
+    if (codeBlockMatches) {
+      core.info(`Found ${codeBlockMatches.length} code blocks in the comment`);
+      
+      for (const codeBlock of codeBlockMatches) {
+        const jsonMatch = codeBlock.match(/```(?:json)?\s*({[\s\S]*?})\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          try {
+            const extractedAction = JSON.parse(jsonMatch[1].trim()) as Action;
+            if (isValidAction(extractedAction)) {
+              core.info(`Successfully extracted action from code block: ${JSON.stringify(extractedAction)}`);
+              
+              // Execute the confirmed action
+              core.info(`Executing confirmed action: ${JSON.stringify(extractedAction)}`);
+              await executeAction(extractedAction, issue, githubClient);
+              return;
+            }
+          } catch (e) {
+            core.info(`Failed to parse JSON from code block: ${e}`);
+          }
+        }
+      }
+    }
+    
+    core.info('No valid action found in any code blocks');
     return;
   }
   
