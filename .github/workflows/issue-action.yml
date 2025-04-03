@@ -1,8 +1,10 @@
-name: Issue Action
+name: Issue and Comment Action
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write

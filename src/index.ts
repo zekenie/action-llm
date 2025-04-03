@@ -50,8 +50,6 @@ async function run(): Promise<void> {
       await handleIssueEvent(context, githubClient, llmEngine);
     } else if (context.eventName === 'issue_comment') {
       await handleCommentEvent(context, githubClient, llmEngine);
-    } else if (context.eventName === 'reaction') {
-      await handleReactionEvent(context, githubClient, llmEngine);
     } else {
       core.info(`Ignoring unsupported event type: ${context.eventName}`);
     }
@@ -92,18 +90,23 @@ async function handleIssueEvent(
       // Reply with the extracted action for confirmation
       await githubClient.createIssueComment(
         issueNumber,
-        `I've extracted the following action from your request. Please confirm by adding a 👍 reaction to this comment.\n\n\`\`\`json\n${JSON.stringify(action, null, 2)}\n\`\`\``
+        `I've extracted the following action from your request. Please confirm by replying with "approve" or "confirm".\n\n\`\`\`json\n${JSON.stringify(action, null, 2)}\n\`\`\``
       );
       return;
     } else {
       // If no action could be extracted, engage in conversation
-      const botLogin = context.payload.repository?.owner?.login || 'github-actions[bot]';
+      const possibleBotLogins = [
+        context.payload.repository?.owner?.login,
+        'github-actions[bot]',
+        'github-actions'
+      ];
+      const botUsername = possibleBotLogins[0] || 'github-actions[bot]';
       
       // Get initial conversation response from LLM
       const response = await llmEngine.processConversation(
         [], // No previous comments yet
         issueBody,
-        botLogin,
+        botUsername,
         createGitHubContext(issue.user.login, context.repo, issueNumber)
       );
       
@@ -138,21 +141,86 @@ async function handleCommentEvent(
   core.info(`Processing comment on issue #${issueNumber} by ${commentAuthor}`);
   
   // Check if the bot itself made the comment
-  const botLogin = context.payload.repository?.owner?.login || 'github-actions[bot]';
-  if (commentAuthor === botLogin) {
+  // GitHub Actions can use the repository owner's login or the github-actions bot
+  const possibleBotLogins = [
+    context.payload.repository?.owner?.login,
+    'github-actions[bot]',
+    'github-actions'
+  ];
+  
+  core.info(`Comment author: ${commentAuthor}, Possible bot logins: ${possibleBotLogins.join(', ')}`);
+  
+  if (possibleBotLogins.includes(commentAuthor)) {
     core.info('Ignoring bot\'s own comment');
     return;
   }
   
+  // Check if this is an approval comment for a previous action
+  if (commentBody.toLowerCase().includes('approve') || 
+      commentBody.toLowerCase().includes('confirm') || 
+      commentBody.toLowerCase().includes('execute') ||
+      commentBody.toLowerCase().includes('yes')) {
+    
+    core.info(`Detected approval comment: "${commentBody}"`);
+    
+    // Get previous comment from bot
+    const comments = await githubClient.getIssueComments(issueNumber);
+    
+    // Filter to bot comments that contain JSON code blocks
+    const possibleBotLogins = [
+      context.payload.repository?.owner?.login,
+      'github-actions[bot]',
+      'github-actions'
+    ];
+    
+    const botComments = comments.filter(c => 
+      possibleBotLogins.includes(c.author) && 
+      c.body.includes('```json') &&
+      c.id !== comment.id  // Skip the current comment
+    );
+    
+    if (botComments.length > 0) {
+      // Get the most recent bot comment with an action
+      const latestBotComment = botComments[botComments.length - 1];
+      
+      core.info(`Found previous bot comment to approve: ${latestBotComment.id}`);
+      
+      // Extract action from the comment
+      const action = await extractActionDirectly(latestBotComment.body);
+      
+      if (action) {
+        core.info(`Extracted action from bot comment: ${JSON.stringify(action)}`);
+        
+        // Execute the action
+        await executeAction(action, issue, githubClient);
+        return;
+      } else {
+        core.info(`No valid action found in bot comment: ${latestBotComment.body.substring(0, 100)}...`);
+        await githubClient.createIssueComment(
+          issueNumber,
+          `I couldn't find a valid action to execute in my previous comment. Can you please provide more details?`
+        );
+        return;
+      }
+    } else {
+      core.info(`No previous bot comments found with actions`);
+      await githubClient.createIssueComment(
+        issueNumber,
+        `I couldn't find a previous action to approve. Can you please provide more details about what you'd like to do?`
+      );
+      return;
+    }
+  }
+
   // Try to extract action directly from comment
   let action = await extractActionDirectly(commentBody);
   
   if (action) {
     // If direct action found, ask for confirmation
     core.info(`Found direct action in comment: ${JSON.stringify(action)}`);
-    const commentId = await githubClient.createIssueComment(
+    await githubClient.createIssueComment(
       issueNumber,
-      `I'll execute this action for you. Please confirm by adding a 👍 reaction to this comment.\n\n\`\`\`json\n${JSON.stringify(action, null, 2)}\n\`\`\``
+      `I'll execute this action for you. Please reply with "approve" to confirm.\n\n\`\`\`json\n${JSON.stringify(action, null, 2)}\n\`\`\``
     );
     return;
   }
@@ -169,10 +237,11 @@ async function handleCommentEvent(
   }));
   
   // Get LLM response
+  const botUsername = possibleBotLogins[0] || 'github-actions[bot]';
   const response = await llmEngine.processConversation(
     conversation,
     issue_details.body,
-    botLogin,
+    botUsername,
     createGitHubContext(commentAuthor, context.repo, issueNumber)
   );
   
@@ -180,87 +249,6 @@ async function handleCommentEvent(
   await githubClient.createIssueComment(issueNumber, response);
 }
 
-/**
- * Handle GitHub reaction events
- */
-async function handleReactionEvent(
-  context: typeof github.context,
-  githubClient: GitHubClient,
-  llmEngine: LLMEngine
-): Promise<void> {
-  // Only process new reactions
-  if (context.payload.action !== 'created') {
-    core.info('Ignoring reaction event that is not "created"');
-    return;
-  }
-  
-  // Log the entire payload for debugging
-  core.info('Reaction event payload:');
-  core.info(JSON.stringify(context.payload, null, 2));
-  
-  const reaction = context.payload.reaction!;
-  const comment = context.payload.comment!;
-  const issue = context.payload.issue!;
-  const issueNumber = issue.number;
-  
-  core.info(`Received reaction "${reaction.content}" from user "${reaction.user?.login}" on comment #${comment.id}`);
-  
-  // Only proceed if it's a thumbs up reaction
-  if (reaction.content !== '+1') {
-    core.info(`Ignoring reaction: ${reaction.content} (not a thumbs up)`);
-    return;
-  }
-  
-  core.info(`Processing 👍 reaction on comment #${comment.id} on issue #${issueNumber}`);
-  
-  // Check if the comment is from the bot
-  const botLogin = context.payload.repository?.owner?.login || 'github-actions[bot]';
-  if (comment.user.login !== botLogin) {
-    core.info('Ignoring reaction on non-bot comment');
-    return;
-  }
-  
-  // Extract action from the comment
-  core.info(`Attempting to extract action from comment body: ${comment.body.substring(0, 100)}...`);
-  const action = await extractActionDirectly(comment.body);
-  
-  if (!action) {
-    core.info('No action found in the comment. Looking for JSON code blocks...');
-    
-    // Try to find JSON code blocks in the comment
-    const codeBlockMatches = comment.body.match(/```(?:json)?\s*({[\s\S]*?})\s*```/g);
-    
-    if (codeBlockMatches) {
-      core.info(`Found ${codeBlockMatches.length} code blocks in the comment`);
-      
-      for (const codeBlock of codeBlockMatches) {
-        const jsonMatch = codeBlock.match(/```(?:json)?\s*({[\s\S]*?})\s*```/);
-        if (jsonMatch && jsonMatch[1]) {
-          try {
-            const extractedAction = JSON.parse(jsonMatch[1].trim()) as Action;
-            if (isValidAction(extractedAction)) {
-              core.info(`Successfully extracted action from code block: ${JSON.stringify(extractedAction)}`);
-              
-              // Execute the confirmed action
-              core.info(`Executing confirmed action: ${JSON.stringify(extractedAction)}`);
-              await executeAction(extractedAction, issue, githubClient);
-              return;
-            }
-          } catch (e) {
-            core.info(`Failed to parse JSON from code block: ${e}`);
-          }
-        }
-      }
-    }
-    
-    core.info('No valid action found in any code blocks');
-    return;
-  }
-  
-  // Execute the confirmed action
-  core.info(`Executing confirmed action: ${JSON.stringify(action)}`);
-  await executeAction(action, issue, githubClient);
-}
 
 /**
  * Try to extract action directly from text (JSON parsing)
