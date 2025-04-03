@@ -6,7 +6,6 @@ jspm_packages/
 # dist/ - We're including this for GitHub Actions
 build/
 out/
-lib/
 
 # TypeScript cache
 *.tsbuildinfo
