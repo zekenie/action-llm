@@ -15,10 +15,18 @@ domainRegistry.registerDomain('team-management', teamManagementReducer);
 
 async function run(): Promise<void> {
   try {
-    // Get GitHub token and LLM API key
-    const token = core.getInput('github-token', { required: true });
-    const apiKey = core.getInput('llm-api-key', { required: true });
-    const llmModel = core.getInput('llm-model') || 'claude-3-opus-20240229';
+    // Get GitHub token and LLM API key (from inputs or environment variables)
+    const token = core.getInput('github-token', { required: false }) || process.env.GITHUB_TOKEN;
+    if (!token) {
+      throw new Error('GitHub token is required but not provided');
+    }
+    
+    const apiKey = core.getInput('llm-api-key', { required: false }) || process.env.LLM_API_KEY;
+    if (!apiKey) {
+      throw new Error('LLM API key is required but not provided');
+    }
+    
+    const llmModel = core.getInput('llm-model') || process.env.LLM_MODEL || 'claude-3.7-sonnet-20240229';
     
     // Get the event that triggered the action
     const context = github.context;

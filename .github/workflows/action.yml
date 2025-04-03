@@ -21,3 +21,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           llm-api-key: ${{ secrets.LLM_API_KEY }}
           llm-model: ${{ vars.LLM_MODEL || 'claude-3.7-sonnet-20250219' }}
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'claude-3.7-sonnet-20250219' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
