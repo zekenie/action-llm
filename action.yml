@@ -1,10 +1,17 @@
 name: 'GitHub LLM Actions System'
-description: 'Process actions from GitHub issues using a reducer system'
+description: 'Process actions from GitHub issues using a reducer system with LLM conversation capabilities'
 inputs:
   github-token:
     description: 'GitHub token with write permissions to the repository'
     required: true
     default: ${{ github.token }}
+  llm-api-key:
+    description: 'API key for Claude or other LLM provider'
+    required: true
+  llm-model:
+    description: 'The LLM model to use (e.g. claude-3-opus-20240229)'
+    required: false
+    default: 'claude-3-opus-20240229'
 runs:
   using: 'node20'
   main: 'dist/index.js'

@@ -1,10 +1,11 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { Action, GitHubContext } from '../lib/types';
-import { actionDispatcher } from '../lib/dispatcher';
-import { domainRegistry } from '../lib/registry';
-import { stateManager } from '../lib/state';
-import { GitHubClient } from '../lib/github/client';
+import { Action, GitHubContext } from './lib/types';
+import { actionDispatcher } from './lib/dispatcher';
+import { domainRegistry } from './lib/registry';
+import { stateManager } from './lib/state';
+import { GitHubClient } from './lib/github/client';
+import { LLMEngine } from './lib/llm/engine';
 
 // Import domain reducers
 import teamManagementReducer from '../team-management/reducer';
@@ -12,82 +13,33 @@ import teamManagementReducer from '../team-management/reducer';
 // Register domains
 domainRegistry.registerDomain('team-management', teamManagementReducer);
 
-// Extract action from issue body
-async function extractActionFromIssueBody(body: string): Promise<Action | null> {
-  try {
-    // Assuming the issue body contains valid JSON for an action
-    const action = JSON.parse(body) as Action;
-    return action;
-  } catch (error) {
-    core.warning(`Failed to parse action from issue body: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    return null;
-  }
-}
-
 async function run(): Promise<void> {
   try {
-    // Get GitHub token
+    // Get GitHub token and LLM API key
     const token = core.getInput('github-token', { required: true });
-    const octokit = github.getOctokit(token);
+    const apiKey = core.getInput('llm-api-key', { required: true });
+    const llmModel = core.getInput('llm-model') || 'claude-3-opus-20240229';
     
     // Get the event that triggered the action
     const context = github.context;
+    const repo = context.repo;
     
-    // Check if this is a new issue
-    if (context.eventName === 'issues' && context.payload.action === 'opened') {
-      const issue = context.payload.issue!;
-      const repo = context.repo;
-      
-      core.info(`Processing issue #${issue.number}: ${issue.title}`);
-      
-      // Create GitHub client
-      const githubClient = new GitHubClient(token, repo.owner, repo.repo);
-      
-      // Set GitHub client in state manager for remote operations
-      stateManager.setGitHubClient(githubClient);
-      
-      // Extract action from issue body
-      const action = await extractActionFromIssueBody(issue.body || '');
-      
-      // If we couldn't extract an action, post a comment explaining the format
-      if (!action) {
-        await githubClient.createIssueComment(
-          issue.number,
-          `Failed to extract an action from the issue body. The body should contain a valid JSON object with domain, type, and payload properties.`
-        );
-        return;
-      }
-      
-      // Create GitHub context for the action
-      const githubContext: GitHubContext = {
-        username: issue.user.login,
-        repository: {
-          owner: repo.owner,
-          repo: repo.repo
-        },
-        issueNumber: issue.number,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Dispatch the action
-      const result = await actionDispatcher.dispatch(action, githubContext);
-      
-      // Post result as a comment
-      if (result.success) {
-        await githubClient.createIssueComment(
-          issue.number,
-          `✅ Action processed successfully!\n\n\`\`\`json\n${JSON.stringify(result.newState, null, 2)}\n\`\`\``
-        );
-        
-        core.info(`Action processed successfully!`);
-      } else {
-        await githubClient.createIssueComment(
-          issue.number,
-          `❌ Failed to process action: ${result.error}`
-        );
-        
-        core.error(`Failed to process action: ${result.error}`);
-      }
+    // Initialize clients
+    const githubClient = new GitHubClient(token, repo.owner, repo.repo);
+    const llmEngine = new LLMEngine(apiKey, llmModel);
+    
+    // Set GitHub client in state manager for remote operations
+    stateManager.setGitHubClient(githubClient);
+    
+    // Handle different event types
+    if (context.eventName === 'issues') {
+      await handleIssueEvent(context, githubClient, llmEngine);
+    } else if (context.eventName === 'issue_comment') {
+      await handleCommentEvent(context, githubClient, llmEngine);
+    } else if (context.eventName === 'reaction') {
+      await handleReactionEvent(context, githubClient, llmEngine);
+    } else {
+      core.info(`Ignoring unsupported event type: ${context.eventName}`);
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -96,6 +48,257 @@ async function run(): Promise<void> {
       core.setFailed('An unknown error occurred');
     }
   }
+}
+
+/**
+ * Handle GitHub issue events (opened, edited)
+ */
+async function handleIssueEvent(
+  context: typeof github.context,
+  githubClient: GitHubClient,
+  llmEngine: LLMEngine
+): Promise<void> {
+  const issue = context.payload.issue!;
+  const issueNumber = issue.number;
+  const issueBody = issue.body || '';
+  
+  core.info(`Processing issue #${issueNumber}: ${issue.title}`);
+  
+  // Check if issue body contains a direct action (JSON)
+  let action = await extractActionDirectly(issueBody);
+  
+  // If no direct action, use LLM to process
+  if (!action) {
+    // Try to extract using LLM
+    action = await llmEngine.processIssue(issueBody, issueNumber);
+    
+    if (action) {
+      core.info(`LLM extracted action: ${JSON.stringify(action)}`);
+      
+      // Reply with the extracted action for confirmation
+      await githubClient.createIssueComment(
+        issueNumber,
+        `I've extracted the following action from your request. Please confirm by adding a 👍 reaction to this comment.\n\n\`\`\`json\n${JSON.stringify(action, null, 2)}\n\`\`\``
+      );
+      return;
+    } else {
+      // If no action could be extracted, engage in conversation
+      const botLogin = context.payload.repository?.owner?.login || 'github-actions[bot]';
+      
+      // Get initial conversation response from LLM
+      const response = await llmEngine.processConversation(
+        [], // No previous comments yet
+        issueBody,
+        botLogin,
+        createGitHubContext(issue.user.login, context.repo, issueNumber)
+      );
+      
+      // Post the response
+      await githubClient.createIssueComment(issueNumber, response);
+      return;
+    }
+  }
+  
+  // If we have a direct action, execute it immediately
+  core.info(`Extracted direct action from issue body: ${JSON.stringify(action)}`);
+  await executeAction(action, issue, githubClient);
+}
+
+/**
+ * Handle GitHub issue comment events
+ */
+async function handleCommentEvent(
+  context: typeof github.context,
+  githubClient: GitHubClient,
+  llmEngine: LLMEngine
+): Promise<void> {
+  // Only process newly created comments
+  if (context.payload.action !== 'created') return;
+  
+  const comment = context.payload.comment!;
+  const issue = context.payload.issue!;
+  const issueNumber = issue.number;
+  const commentBody = comment.body || '';
+  const commentAuthor = comment.user.login;
+  
+  core.info(`Processing comment on issue #${issueNumber} by ${commentAuthor}`);
+  
+  // Check if the bot itself made the comment
+  const botLogin = context.payload.repository?.owner?.login || 'github-actions[bot]';
+  if (commentAuthor === botLogin) {
+    core.info('Ignoring bot\'s own comment');
+    return;
+  }
+  
+  // Try to extract action directly from comment
+  let action = await extractActionDirectly(commentBody);
+  
+  if (action) {
+    // If direct action found, ask for confirmation
+    core.info(`Found direct action in comment: ${JSON.stringify(action)}`);
+    const commentId = await githubClient.createIssueComment(
+      issueNumber,
+      `I'll execute this action for you. Please confirm by adding a 👍 reaction to this comment.\n\n\`\`\`json\n${JSON.stringify(action, null, 2)}\n\`\`\``
+    );
+    return;
+  }
+  
+  // If no direct action, continue the conversation
+  // Get all comments to build context
+  const issue_details = await githubClient.getIssue(issueNumber);
+  const comments = await githubClient.getIssueComments(issueNumber);
+  
+  // Format comments for the LLM
+  const conversation = comments.map(c => ({
+    author: c.author,
+    body: c.body
+  }));
+  
+  // Get LLM response
+  const response = await llmEngine.processConversation(
+    conversation,
+    issue_details.body,
+    botLogin,
+    createGitHubContext(commentAuthor, context.repo, issueNumber)
+  );
+  
+  // Post the response
+  await githubClient.createIssueComment(issueNumber, response);
+}
+
+/**
+ * Handle GitHub reaction events
+ */
+async function handleReactionEvent(
+  context: typeof github.context,
+  githubClient: GitHubClient,
+  llmEngine: LLMEngine
+): Promise<void> {
+  // Only process new reactions
+  if (context.payload.action !== 'created') return;
+  
+  const reaction = context.payload.reaction!;
+  const comment = context.payload.comment!;
+  const issue = context.payload.issue!;
+  const issueNumber = issue.number;
+  
+  // Only proceed if it's a thumbs up reaction
+  if (reaction.content !== '+1') {
+    core.info(`Ignoring reaction: ${reaction.content}`);
+    return;
+  }
+  
+  core.info(`Processing 👍 reaction on comment #${comment.id} on issue #${issueNumber}`);
+  
+  // Check if the comment is from the bot
+  const botLogin = context.payload.repository?.owner?.login || 'github-actions[bot]';
+  if (comment.user.login !== botLogin) {
+    core.info('Ignoring reaction on non-bot comment');
+    return;
+  }
+  
+  // Extract action from the comment
+  const action = await extractActionDirectly(comment.body);
+  if (!action) {
+    core.info('No action found in the comment');
+    return;
+  }
+  
+  // Execute the confirmed action
+  core.info(`Executing confirmed action: ${JSON.stringify(action)}`);
+  await executeAction(action, issue, githubClient);
+}
+
+/**
+ * Try to extract action directly from text (JSON parsing)
+ */
+async function extractActionDirectly(text: string): Promise<Action | null> {
+  // First try to parse the entire text as JSON
+  try {
+    const action = JSON.parse(text) as Action;
+    if (isValidAction(action)) {
+      return action;
+    }
+  } catch (e) {
+    // If that fails, look for a JSON block in markdown
+    const jsonMatch = text.match(/```(?:json)?\s*({[\s\S]*?})\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      try {
+        const action = JSON.parse(jsonMatch[1].trim()) as Action;
+        if (isValidAction(action)) {
+          return action;
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Execute an action through the dispatcher
+ */
+async function executeAction(
+  action: Action,
+  issue: any,
+  githubClient: GitHubClient
+): Promise<void> {
+  const githubContext = createGitHubContext(
+    issue.user.login,
+    { owner: githubClient['owner'], repo: githubClient['repo'] },
+    issue.number
+  );
+  
+  // Dispatch the action
+  const result = await actionDispatcher.dispatch(action, githubContext);
+  
+  // Post result as a comment
+  if (result.success) {
+    await githubClient.createIssueComment(
+      issue.number,
+      `✅ Action processed successfully!\n\n\`\`\`json\n${JSON.stringify(result.newState, null, 2)}\n\`\`\``
+    );
+    
+    core.info(`Action processed successfully!`);
+  } else {
+    await githubClient.createIssueComment(
+      issue.number,
+      `❌ Failed to process action: ${result.error}`
+    );
+    
+    core.error(`Failed to process action: ${result.error}`);
+  }
+}
+
+/**
+ * Create a GitHub context object
+ */
+function createGitHubContext(
+  username: string,
+  repo: { owner: string; repo: string },
+  issueNumber?: number
+): GitHubContext {
+  return {
+    username,
+    repository: repo,
+    issueNumber,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Check if an object is a valid action
+ */
+function isValidAction(obj: any): obj is Action {
+  return (
+    obj &&
+    typeof obj === 'object' &&
+    typeof obj.domain === 'string' &&
+    typeof obj.type === 'string' &&
+    obj.payload && typeof obj.payload === 'object'
+  );
 }
 
 run();
