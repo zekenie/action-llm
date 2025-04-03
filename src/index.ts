@@ -15,6 +15,18 @@ domainRegistry.registerDomain('team-management', teamManagementReducer);
 
 async function run(): Promise<void> {
   try {
+    // Log available inputs for debugging
+    core.info('Available inputs:');
+    core.info(`github-token input: ${!!core.getInput('github-token')}`);
+    core.info(`llm-api-key input: ${!!core.getInput('llm-api-key')}`);
+    core.info(`llm-model input: ${!!core.getInput('llm-model')}`);
+    
+    // Log if env variables are set (without revealing their values)
+    core.info('Environment variables:');
+    core.info(`GITHUB_TOKEN env: ${!!process.env.GITHUB_TOKEN}`);
+    core.info(`LLM_API_KEY env: ${!!process.env.LLM_API_KEY}`);
+    core.info(`LLM_MODEL env: ${!!process.env.LLM_MODEL}`);
+    
     // Get GitHub token and LLM API key (from inputs or environment variables)
     const token = core.getInput('github-token', { required: false }) || process.env.GITHUB_TOKEN;
     if (!token) {

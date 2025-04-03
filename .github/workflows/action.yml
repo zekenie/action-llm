@@ -11,10 +11,22 @@ on:
 jobs:
   process:
     runs-on: ubuntu-latest
+    # Define environment variables at the job level
+    env:
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_MODEL: ${{ vars.LLM_MODEL || 'claude-3.7-sonnet-20250219' }}
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        
+      
+      - name: Debug Available Secrets and Variables
+        run: |
+          echo "Checking if secrets/vars are available (not showing values):"
+          echo "GITHUB_TOKEN available: ${{ secrets.GITHUB_TOKEN != '' }}"
+          echo "LLM_API_KEY available: ${{ secrets.LLM_API_KEY != '' }}"
+          echo "LLM_MODEL available: ${{ vars.LLM_MODEL != '' }}"
+      
       - name: Run Action AI
         uses: ./
         with:
