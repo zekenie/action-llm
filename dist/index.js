@@ -34603,12 +34603,8 @@ async function handleIssueEvent(context, githubClient, llmEngine) {
         }
         else {
             // If no action could be extracted, engage in conversation
-            const possibleBotLogins = [
-                context.payload.repository?.owner?.login,
-                'github-actions[bot]',
-                'github-actions'
-            ];
-            const botUsername = possibleBotLogins[0] || 'github-actions[bot]';
+            // Use github-actions[bot] as the bot username for Claude to identify responses
+            const botUsername = 'github-actions[bot]';
             // Get initial conversation response from LLM
             const response = await llmEngine.processConversation([], // No previous comments yet
             issueBody, botUsername, createGitHubContext(issue.user.login, context.repo, issueNumber));
@@ -34634,16 +34630,11 @@ async function handleCommentEvent(context, githubClient, llmEngine) {
     const commentBody = comment.body || '';
     const commentAuthor = comment.user.login;
     core.info(`Processing comment on issue #${issueNumber} by ${commentAuthor}`);
-    // Check if the bot itself made the comment
-    // GitHub Actions can use the repository owner's login or the github-actions bot
-    const possibleBotLogins = [
-        context.payload.repository?.owner?.login,
-        'github-actions[bot]',
-        'github-actions'
-    ];
-    core.info(`Comment author: ${commentAuthor}, Possible bot logins: ${possibleBotLogins.join(', ')}`);
-    if (possibleBotLogins.includes(commentAuthor)) {
-        core.info('Ignoring bot\'s own comment');
+    // Check if the comment is from the GitHub Actions bot
+    const botLogins = ['github-actions[bot]', 'github-actions'];
+    core.info(`Comment author: ${commentAuthor}, GitHub Actions bots: ${botLogins.join(', ')}`);
+    if (botLogins.includes(commentAuthor)) {
+        core.info('Ignoring GitHub Actions bot\'s own comment');
         return;
     }
     // Check if this is an approval comment for a previous action
@@ -34654,14 +34645,10 @@ async function handleCommentEvent(context, githubClient, llmEngine) {
         core.info(`Detected approval comment: "${commentBody}"`);
         // Get previous comment from bot
         const comments = await githubClient.getIssueComments(issueNumber);
-        // Filter to bot comments that contain JSON code blocks
-        const possibleBotLogins = [
-            context.payload.repository?.owner?.login,
-            'github-actions[bot]',
-            'github-actions'
-        ];
-        const botComments = comments.filter(c => possibleBotLogins.includes(c.author) &&
-            c.body.includes('```json') &&
+        // Filter to bot comments containing JSON code blocks
+        // Include both GitHub Actions bot and potentially your own comments with actions
+        const actionBotLogins = ['github-actions[bot]', 'github-actions'];
+        const botComments = comments.filter(c => (actionBotLogins.includes(c.author) || c.body.includes('```json')) &&
             c.id !== comment.id // Skip the current comment
         );
         if (botComments.length > 0) {
@@ -34706,7 +34693,7 @@ async function handleCommentEvent(context, githubClient, llmEngine) {
         body: c.body
     }));
     // Get LLM response
-    const botUsername = possibleBotLogins[0] || 'github-actions[bot]';
+    const botUsername = 'github-actions[bot]';
     const response = await llmEngine.processConversation(conversation, issue_details.body, botUsername, createGitHubContext(commentAuthor, context.repo, issueNumber));
     // Post the response
     await githubClient.createIssueComment(issueNumber, response);
