@@ -35031,7 +35031,6 @@ class LLMEngine {
             // If direct parsing fails, use Claude to extract the action
             const systemPrompt = this.generateSystemPrompt();
             const messages = [
-                { role: 'system', content: systemPrompt },
                 { role: 'user', content: `Extract the action from this text: ${issueBody}` }
             ];
             const response = await this.callClaudeAPI(messages);
@@ -35049,10 +35048,8 @@ class LLMEngine {
     async processConversation(issueComments, issueBody, botUsername, context) {
         try {
             const systemPrompt = this.generateSystemPrompt();
-            // Start the conversation with the system prompt
-            const messages = [
-                { role: 'system', content: systemPrompt },
-            ];
+            // Start with empty messages array
+            const messages = [];
             // Add the issue body as the first user message
             messages.push({ role: 'user', content: issueBody });
             // Add all comments in chronological order
@@ -35135,6 +35132,7 @@ Keep your responses concise and focused on helping the user complete their task 
                 },
                 body: JSON.stringify({
                     model: this.model,
+                    system: this.generateSystemPrompt(),
                     messages,
                     max_tokens: 4000
                 })
